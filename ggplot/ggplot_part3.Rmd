@@ -1,0 +1,447 @@
+---
+title: "Ggplot_part3"
+author: "Zhang Xiaoqiong"
+date: "1/22/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+## Ggplot Part3 
+Plots for different use.
+
+```{r dataset}
+options(scipen = 999)
+library(ggplot2)
+theme_set(theme_bw())
+data("midwest",package = "ggplot2")
+data("mpg",package = "ggplot2")
+data("economics",package = "ggplot2")
+dim(midwest)
+dim(mpg)
+```
+### 1. Correlation
+The following plots help to examine how well correlated two variables are.
+
+#### Scatterplot (midwest)
+It van be drawn using geom_point(); geom_smooth draws a smoothing line (based on loess) by setting method="lm"
+```{r}
+gg = ggplot(midwest,aes(x=area,y=poptotal)) +
+  geom_point(aes(col=state,size=popdensity)) +
+  geom_smooth(method="loess",se=F) +
+  xlim(c(0,0.1)) +
+  ylim(c(0,500000)) +
+  labs(subtitle = "Area Vs Population",
+       y= "Poplation",
+       x = "Area",
+       title = "Scatterplot",
+       caption = "Source: midwest")
+
+plot(gg)
+```
+
+#### Scatterplot With Encircling
+
+Encircling certain special group of points or region can be done using the geom_encircle() in *ggalt* package
+```{r}
+library(ggalt)
+# Encircling Area Data
+midwest_select = midwest[midwest$poptotal > 350000 &
+                           midwest$poptotal <= 500000 &
+                           midwest$area > 0.01 &
+                           midwest$area < 0.1, ]
+# plot
+gg + geom_encircle(aes(x=area,y=poptotal),
+                   data = midwest_select,
+                   color = "red",
+                   size = 2,
+                   expand = 0.08) +
+  labs(title = "Scatterplot + Encircle")
+```
+
+#### Jitter Plot (mpg example)
+Method 1 to deal with overlapping points
+```{r}
+g = ggplot(mpg,aes(cty,hwy))
+
+# Scatter plot
+g + geom_point() + geom_smooth(method="lm",se=F) +
+  labs(subtitle = "mpg: city vs highway mileage",
+       y = "hwy",
+       x = "cty",
+       title = "Scatterplot with overlapping points",
+       caption = "Source: midwest")
+
+# Jitter plot
+g + geom_jitter(width=.5,size=1) + 
+  labs(title = "Jittered points",
+       subtitle = "mpg: city vs highway mileage",
+       y = "hwy",
+       x = "cty")
+```
+#### Counts Chart (mpg example)
+Second method to overcome the problem of data points overlap
+```{r}
+
+# Jitter plot
+g + geom_count(col="tomato3",show.legend = F) + 
+  labs(title = "Counts Plot",
+       subtitle = "mpg: city vs highway mileage",
+       y = "hwy",
+       x = "cty")
+```
+#### Bubble Charts (mpg example)
+Bubble charts provide a better visual comparison between groups based on: a categorical variable (by changing the color) and another continuous variable (by changing the size of points)
+```{r}
+
+# dataset 
+mpg_select = mpg[mpg$manufacturer %in% c("audi","ford","honda","hyundai"),]
+
+g = ggplot(mpg_select,aes(displ,cty)) +
+  labs(subtitle = "mpg: Displacement vs City Mileage",
+       title = "Bubble chart")
+
+g + geom_jitter(aes(col=manufacturer, size=hwy)) +
+  geom_smooth(aes(col=manufacturer),method="lm",se=F)
+```
+#### Boxplot / Marginal Histogram (mpg example)
+It shows the relationship as well as the distributin in the same chart.
+It can be done with *ggMarginal()* function from the *ggExtra* package
+```{r}
+library(ggExtra)
+
+g = ggplot(mpg,aes(cty,hwy)) + geom_count() + geom_smooth(method="lm",se=F)
+
+ggMarginal(g,type="histogram",fill="transparent")
+ggMarginal(g,type="boxplot",fill="transparent")
+
+```
+
+#### Correlogram (mecars example)
+It examines the corellation of ultiplecontinuous variables present in the same dataframe
+```{r}
+library(ggcorrplot)
+
+#data
+data("mtcars")
+corr = round(cor(mtcars),1)
+
+# plot
+ggcorrplot(corr,hc.order=TRUE,
+           type = "lower",
+           lab = TRUE,
+           lab_size = 3,
+           method = "circle",
+           colors = c("tomato2","white","springgreen3"),
+           title="Correlogram of mtcars",
+           ggtheme = theme_bw)
+```
+
+### 2.Deviation 
+
+#### Diverging bars (mtcars example)
+It can handle both negative and positive values with function *geom_bar()*.
+Note: by default, geom_bar() has the *stat* set to count, which is to make histogram. To make bar charts, *stat* needs to be set to *identity*
+
+```{r}
+library(ggcorrplot)
+
+# data prep
+mtcars$Car_name = rownames(mtcars) # create new column for car names
+mtcars$mpg_z = round((mtcars$mpg - mean(mtcars$mpg))/sd(mtcars$mpg),2) # normalize the data
+mtcars$mpg_type = ifelse(mtcars$mpg_z < 0,"below","above")
+mtcars = mtcars[order(mtcars$mpg_z), ] # sort
+mtcars$Car_name = factor(mtcars$Car_name,levels=mtcars$'car name') # convert to factor to retain sorted order in plot
+
+# Diverging Barcharts
+ggplot(mtcars,aes(x=Car_name,y=mpg_z,label=mpg_z)) +
+  geom_bar(stat='identity',aes(fill=mpg_type),width=.5) +
+  scale_fill_manual(name="Mileage",
+                    labels = c("Above Average","Below Average"),
+                    values = c("above" = "#00ba38","below" = "#f8766d")) +
+  labs(subtitle = "Normalised mileage from 'mtcars'",
+       title = "Diverging Bars") +
+  coord_flip()
+```
+
+#### Diverging Lollipop Chart
+It can handle both negative and positive values with function *geom_bar()*.
+Note: by default, geom_bar() has the *stat* set to count, which is to make histogram. To make bar charts, *stat* needs to be set to *identity*
+
+```{r}
+ggplot(mtcars,aes(x=Car_name,y=mpg_z,label=mpg_z)) +
+  geom_point(stat='identity',fill="black",size=6) +
+  geom_segment(aes(y = 0,
+                   x = Car_name,
+                   yend = mpg_z,
+                   xend = Car_name),
+               color = "black") +
+  geom_text(color = "white", size = 2) +
+  labs(title="Diverging Lollipop Chart",
+       subtitle = "Normalized mileage from 'mtcars': Lollipop") +
+  ylim(-2.5,2.5) +
+  coord_flip()
+```
+
+#### Diverging Dot Plot
+
+```{r}
+ggplot(mtcars,aes(x=Car_name,y=mpg_z,label=mpg_z)) +
+  geom_point(stat='identity',aes(col=mpg_type),size=6) +
+  scale_color_manual(name="Mileage",
+                     labels = c("Above Average","Below Average"),
+                     values = c("above" = "#00ba38","below" = "#f8766d")) +
+  geom_text(color = "white", size = 2) +
+  labs(title="Diverging Dot Plot",
+       subtitle = "Normalized mileage from 'mtcars': Dotplot") +
+  ylim(-2.5,2.5) +
+  coord_flip()
+```
+
+#### Area Chat (economics example)
+It typically used to visualize how a particular metric (such as % return from a stock) performed compared to a certain baseline.
+```{r}
+library(quantmod)
+library(zoo)
+library(xts)
+# Compute % Return
+economics$returns_perc = c(0,diff(economics$psavert)/economics$psavert[-length(economics$psavert)])
+
+# Create break points and labels for axis ticks
+brks = economics$date[seq(1,length(economics$date),12)]
+lbls = lubridate::year(economics$date[seq(1,length(economics$date),12)])
+
+#plot
+ggplot(economics[1:100,],aes(date,returns_perc)) +
+  geom_area() +
+  scale_x_date(breaks=brks,labels=lbls) +
+  theme(axis.text.x = element_text(angle=90)) +
+  labs(title = "Area Chart",
+       subtitle = "Perc Returns for Personal Savings",
+       y = "% Returns for Personal savings",
+       caption = "Source: economics")
+```
+
+### 3.Ranking 
+
+#### Ordered Bar Chart (mpg)
+
+```{r}
+# Prepare data: grow mean sity mileage by manufacturer
+cty_mpg = aggregate(mpg$cty,by=list(mpg$manufacturer),FUN=mean) #aggregate
+colnames(cty_mpg) = c("make","mileage") # Change the column names
+cty_mpg = cty_mpg[order(cty_mpg$mileage),] # sort
+cty_mpg$make = factor(cty_mpg$make,levels = cty_mpg$make) # to retain the order in the plot
+head(cty_mpg,4)
+```
+```{r}
+# plot
+library(ggplot2)
+theme_set(theme_bw())
+
+ggplot(cty_mpg,aes(x=make, y=mileage)) +
+  geom_bar(stat = "identity",width = .5,fill = "tomatos3") +
+  labs(title = "Ordered Bar Chart",
+       subtitle = "Make Vs Avg. Mileage",
+       caption = " Source: mpg") +
+  theme(axis.text.x = element_text(angle=65,vjust=0.6))
+
+```
+
+#### Lollipop Chart (mpg)
+
+```{r}
+ggplot(cty_mpg,aes(x=make, y=mileage)) +
+  geom_point(size=3) +
+  geom_segment(aes(x=make,
+                   xend=make,
+                   y=0,
+                   yend=mileage)) +
+  labs(title = "Lollipop Chart",
+       subtitle = "Make Vs Avg. Mileage",
+       caption = " Source: mpg") +
+  theme(axis.text.x = element_text(angle=65,vjust=0.6))
+
+```
+
+#### Dot Plot (mpg)
+
+```{r}
+library(scales)
+theme_set(theme_classic())
+
+# plot
+ggplot(cty_mpg,aes(x=make, y=mileage)) +
+  geom_point(size=3,col="tomato2") +
+  geom_segment(aes(x=make,
+                   xend=make,
+                   y=min(mileage),
+                   yend=max(mileage)),
+               linetype = "dashed",
+               size = 0.1) +
+  labs(title = "Dot Plot",
+       subtitle = "Make Vs Avg. Mileage",
+       caption = " Source: mpg") +
+  coord_flip()
+
+```
+
+#### Slope Chart 
+
+```{r}
+# Prep data
+df = data.frame(continent=c("Africa","Americas","Asia","Europe","Oceania"),
+                `1952` = c(1252.57246582115,4079.0625522,5195.48400403939,5661.05743476,10298.08565),
+                `1957` = c(1385.23606225577,4616.04373316,4003.13293994242,6963.01281593333,11598.522455))
+
+left_label = paste(df$continent,round(df$X1952),sep=",")
+right_label = paste(df$continent,round(df$X1957),sep=",")
+                    
+df$class = ifelse((df$X1957 - df$X1952)<0,"red","green")
+```
+
+```{r}
+#plot
+p = ggplot(df) + 
+  geom_segment(aes(x=1,xend=2, y = X1952,yend=X1957,col=class),size=.75,show.legend = F) +
+  geom_vline(xintercept = 1,linetype="dashed",size=.1) +
+  geom_vline(xintercept = 2,linetype="dashed",size=.1) +
+  scale_color_manual(labels=c("Up","Down"),
+                     values=c("green"="#00ba35","red"="#f8766d")) +
+  labs(x="",y="Mean GdpPerCap") +
+  xlim(.5,2.5) + 
+  ylim(0, (1.1*(max(df$X1952,df$X1957))))
+
+# Add texts
+p = p + geom_text(label=left_label,y=df$X1952,x=rep(1,NROW(df)),hjust=1.1,size=3.5)
+p = p + geom_text(label=right_label,y=df$X1957,x=rep(2,NROW(df)),hjust=-0.1,size=3.5)
+p = p + geom_text(label="Time 1", x=1, y =1.1*(max(df$X1952,df$X1957)),hjust=1.2,size=5)
+p = p + geom_text(label="Time 2", x=2, y =1.1*(max(df$X1952,df$X1957)),hjust=-0.1,size=5)
+# Minify theme
+p + theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          panel.border = element_blank(),
+          plot.margin = unit(c(1,2,1,2),"cm"))
+
+
+```
+
+### 4.Distribution
+
+#### Histogram
+
+```{r}
+theme_set(theme_classic())
+
+g = ggplot(mpg,aes(displ)) + scale_fill_brewer(palette = "Spectral")
+
+g + geom_histogram(aes(fill=class),
+                   binwidth = .1,
+                   col = "black",
+                   size = .1) +
+  labs(title = "Histogram with Auto Binning" ,
+       subtitle = "Engine Displacement across Vehicle Classes")
+
+g + geom_histogram(aes(fill=class),
+                   bins = 5,
+                   col = "black",
+                   size = .1) +
+  labs(title = "Histogram with Fixed Bins",
+       subtitle = "Engine Displacement across Vehicle Classes")
+```
+
+#### Histogram on a categorical variable
+
+```{r}
+theme_set(theme_classic())
+
+g = ggplot(mpg,aes(manufacturer))
+
+g + geom_bar(aes(fill=class),width=0.5) +
+  theme(axis.text.x = element_text(angle=65,vjust=0.6)) +
+  labs(title = "Histogram on Categorical Variable" ,
+       subtitle = "Manufacture across Vehicle Classes")
+
+```
+#### Density plot
+
+```{r}
+theme_set(theme_classic())
+
+g = ggplot(mpg,aes(cty))
+
+g + geom_density(aes(fill=factor(cyl)),alpha=0.8) +
+  labs(title = "Density plot" ,
+       subtitle = "City Mileage Grouped by Number of cylinders",
+       x = "City Mileage",
+       fill = "# Cylinders")
+
+```
+#### Box plot
+
+```{r}
+theme_set(theme_classic())
+
+g = ggplot(mpg,aes(class,cty))
+
+g + geom_boxplot(varwidth = T, fill="Plum") +
+  labs(title="Box plot",
+       subtitle = "City Mileage grouped by Class of vehicle",
+       caption = "Source:mpg",
+       x = "Class of Vehicle",
+       y = "City Mileage")
+
+```
+
+#### Dot + Box plot
+
+```{r}
+theme_set(theme_bw())
+
+g = ggplot(mpg,aes(manufacturer,cty))
+
+g + geom_boxplot() +
+  geom_dotplot(binaxis = 'y',
+               stackdir = 'center',
+               dotsize = .5,
+               fill = "red") +
+  theme(axis.text.x = element_text(angle=65,vjust=.6)) +
+  labs(title="Box plot + Dot plot",
+       subtitle = "City Mileage vs Class: Each dot represents 1 row in source data",
+       caption = "Source:mpg",
+       x = "Class of Vehicle",
+       y = "City Mileage")
+
+```
+
+#### Tufte Boxplot
+
+```{r}
+library(ggthemes)
+theme_set(theme_tufte())
+
+g = ggplot(mpg,aes(manufacturer,cty))
+
+g + geom_tufteboxplot() +
+  theme(axis.text.x = element_text(angle=65,vjust=.6)) +
+  labs(title="Tufte Styled Boxplot",
+       subtitle = "City Mileage grouped by Class of vehicle",
+       caption = "Source:mpg",
+       x = "Class of Vehicle",
+       y = "City Mileage")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

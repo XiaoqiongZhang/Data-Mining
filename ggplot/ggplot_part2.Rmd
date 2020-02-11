@@ -1,0 +1,269 @@
+---
+title: "Ggplot_part2"
+author: "Zhang Xiaoqiong"
+date: "1/20/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+Note: It also requires the "ggrepel" and "gridExtra" packages. please download them first to run the code
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part2: How to customize ggplot2
+
+
+```{r setups}
+options(scipen=999)
+library(ggplot2)
+data('midwest',package = 'ggplot2')
+theme_set(theme_bw())
+```
+
+
+```{r add plot components}
+gg = ggplot(midwest,aes(x=area,y=poptotal)) +
+  geom_point(aes(col=state,size=popdensity)) +
+  geom_smooth(method = 'loess',se=F) + xlim(c(0,0.1)) + ylim(c(0,500000)) +
+  labs(title='Area Vs Population',y = 'Population',x = 'Area',caption = 'Sourse: midwest')
+plot(gg)
+```
+
+### 1. Adding Plot and Axis Titles
+
+```{r }
+gg + theme(plot.title = element_text(size=20,
+                                     face="bold", # set fond face
+                                     family="American Typewriter", # a new font
+                                     color="tomato",
+                                     hjust=0.5,
+                                     lineheight=1.2),
+           plot.subtitle = element_text(size=15,
+                                        family="American Typewriter",
+                                        face="bold",
+                                        hjust=0.5), # controls horizontal spacing
+           plot.caption = element_text(size=15),
+           axis.title.x = element_text(vjust=1,   # controls vertical spacing
+                                     size=15),
+           axis.title.y = element_text(size=15),
+           axis.text.x = element_text(size=10,
+                                     angle=30,
+                                     vjust=.5),
+           axis.text.y = element_text(size = 10))
+
+```
+
+### 2. Modifying Legend
+
+Method 1: use labs()
+```{r }
+gg + labs(color="State",size="Density") # modify legend title
+
+```
+Method 2: use guides()
+```{r }
+gg + guides(color=guide_legend("State"),size=guide_legend("Density"))
+
+```
+Method 3: use scale_aesthetic_vartype(). It can turn off legend for one particular aesthetic, leaving the rest in place
+```{r }
+gg + scale_color_discrete(name="State") + scale_size_continuous(name="Density",guide = FALSE) # turn off legend for size
+```
+
+#### How to change legend labels and point colors for categories
+```{r}
+gg + scale_color_manual(name="State",
+                        labels=c("Illinois",
+                                 "Indiana",
+                                 "Michigan",
+                                 "Ohio",
+                                 "Wisconsin"),
+                        values = c("IL" = "blue",
+                                   "IN" = "red",
+                                   "MI" = "green",
+                                   "OH" = "brown",
+                                   "WI" = "organfe"))
+```
+#### Change the Order of Legend
+```{r}
+gg + guides(colour = guide_legend(order=1),
+            size = guide_legend(order=2))
+```
+
+#### How to style the legend title, text and key
+```{r}
+gg + theme(legend.title = element_text(size=12,color="firebrick"),
+           legend.text = element_text(size=10),
+           legend.key = element_rect(fill='springgreen')) +
+  guides(colour = guide_legend(override.aes = list(size=2,stroke=1.5)))
+```
+
+#### Remove the legend and change legend positions
+```{r}
+# No legend
+gg + theme(legend.position = "None") + labs(subtitle = "No legend")
+
+# Legend to the left
+gg + theme(legend.position = "left") + labs(subtitle = "Legend on the Left")
+
+# Legend at the bottom and horizontal
+gg + theme(legend.position = "bottom", legend.box = "Horizontal") + labs(subtitle = "Legend at Bottom")
+
+# Legend at bottom-right, inside the plot
+gg + theme(legend.title = element_text(size=12,color="salmon",face="bold"),
+           legend.justification = c(1,0),
+           legend.position = c(0.95,0.05),
+           legend.background = element_blank()) +
+  labs(subtitle = "Legend: Bottom-Right Inside the Plot")
+
+# Legend at top-left, inside the plot
+gg + theme(legend.title = element_text(size=12,color="salmon",face="bold"),
+           legend.justification = c(1,0),
+           legend.position = c(0.05,0.95),
+           legend.background = element_blank(),
+           legend.key = element_blank()) +
+  labs(subtitle = "Legend: Top-Left Inside the Plot")
+```
+
+### 3. Adding Text, Label and Annotation
+
+#### Add text, label around the point
+```{r }
+
+# filter required rows
+midwest_sub = midwest[midwest$poptotal > 300000,]
+midwest_sub$large_county = ifelse(midwest_sub$poptotal > 300000,midwest_sub$county,"")
+
+# plot text and label
+gg + geom_text(aes(label=large_county),size=2,data=midwest_sub)+labs(subtitle="With ggplot2::geom_text") + theme(legend.position = "None") # text
+gg + geom_label(aes(label=large_county),size=2,data=midwest_sub,alpha=0.25) + labs(subtitle="With ggplot::geom_label") + theme(legend.position = "None") # label
+
+# plt text and label that repels eachother (using ggrepel pkg)
+library(ggrepel)
+
+gg + geom_text_repel(aes(label=large_county),size=2,data = midwest_sub) + labs(subtitle = "With ggrepel::geom_text_repel") + theme(legend.position = "None") # text
+gg + geom_label_repel(aes(label=large_county),size=2,data = midwest_sub) + labs(subtitle = "With ggrepel::geom_label_repel") + theme(legend.position = "None") # label
+```
+
+#### Add Annotations Anywhere inside plot
+```{r }
+#define and add annotation
+library(grid)
+my_text = "This text is at x=0.7 and y=0.8!"
+my_grob = grid.text(my_text,x=0.7,y=0.8,gp=gpar(col="firebrick",fontsize=14,fontface="bold"))
+gg + annotation_custom(my_grob)
+```
+
+
+
+
+### 4. Flipping and Reversing X and Y axis
+
+#### Reverse X and Y
+```{r }
+gg + labs(subtitle = "X and Y axis Flipped") + theme(legend.position = "None") + coord_flip()
+```
+#### Reverse the scale of an axis
+```{R}
+gg + labs(subtitle = "X and Y axis Reversed") + theme(legend.position = "None") + scale_x_reverse() + scale_y_reverse()
+```
+### 5. Faceting: Draw multiple plots within one figure
+```{R}
+data(mpg,package="ggplot2")
+
+g = ggplot(mpg,aes(x=displ,y=hwy)) +
+  geom_point() +
+  labs(title="hwy vs disp",caption="Source:mpg") +
+  geom_smooth(method="lm",se=FALSE) +
+  theme_bw()
+plot(g)
+```
+
+#### Face Wrap
+
+facet_wrap is used to break down a large plot into multiple small plots for individual categories
+```{R}
+g + facet_wrap(~ class,nrow=3) + labs(subtitle="Ggplot2 - Faceting - Multiple plots in one figure") # Shared scales
+
+g + facet_wrap(~ class,scales="free") + labs(title = "hwy vs displ",caption = "Source: mpg", subtitle = "Ggplot2 - Faceting - Multiple plots in one figure with free scales") # Scales free
+```
+
+#### Face Grid
+
+facet_grid would get rid of unsignificant space.
+```{R}
+g1 = g + labs(subtitle="Ggplot2 - Faceting - Multiple plots in one figure - For Manufacturer") + facet_grid(manufacturer ~ class)
+plot(g1)
+```
+
+```{R}
+g2 = g + labs(subtitle="Ggplot2 - Faceting - Multiple plots in one figure - For Cylinder") + facet_grid(cyl ~ class)
+plot(g2)
+```
+
+Layout both these charts in the sample panel
+
+```{R}
+library(gridExtra)
+gridExtra::grid.arrange(g1,g2,ncol=2)
+
+```
+### 6. Modifying Plot Background, Major and Minor Axis
+
+#### Change Plot background
+```{R}
+# Base plot
+g = ggplot(mpg,aes(x=displ,y=hwy)) +
+  geom_point() +
+  geom_smooth(method="lm",se=FALSE) +
+  theme_bw()
+
+# Change plot background elements
+g + theme(panel.background = element_rect(fill = 'khaki'),
+          panel.grid.major = element_line(colour = "burlywood",size=1.5),
+          panel.grid.minor = element_line(colour = "tomato",size=.25,linetype = "dashed"),
+          panel.border = element_blank(),
+          axis.line.x = element_line(colour="darkorange",
+                                     size=1.5,
+                                     lineend = "butt"),
+          axis.line.y = element_line(colour="darkorange",
+                                     size=1.5)) +
+  labs(title="Modifies Background",
+       subtitle="How to Change Major and Minor grid, Axis Lines, No Border")
+
+# Change plot margins
+g + theme(plot.background = element_rect(fill="salmon"),
+          plot.margin = unit(c(2,2,1,1),"cm")) +
+  labs(title="Modified Background",subtitle = "How to Change Plot Margin")
+```
+#### Remove Major and Minor Grid, Change Border, Axis Title, Text and Ticks
+```{R}
+g + theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_blank(),
+          axis.title = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank()) +
+  labs(title="Modified Background", subtitle="How to remove major and minor axis grid, border, axis title, text and ticks")
+
+```
+
+#### Add image as background
+```{R}
+library(grid)
+library(png)
+img = png::readPNG("/Users/xiaoqiongzhang/Downloads/Rlogo.png") #Source: https://www.r-projects.org/  The logo is on the top left side.
+g_pic = rasterGrob(img,interpolate = TRUE)
+
+g + theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(size=rel(1.5),face="bold"),
+          axis.ticks = element_blank()) +
+  annotation_custom(g_pic,xmin=5,xmax=7,ymin=30,ymax=45)
+```
+
+
+
+
+

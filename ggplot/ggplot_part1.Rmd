@@ -1,0 +1,146 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Intro I
+
+### 1. Understand
+
+#### setup
+```{r}
+options(scipen = 999)
+library(ggplot2)
+data("midwest",package="ggplot2")
+```
+
+#### Init Ggplot
+aes() function is used to specify the X and Y axes
+```{r}
+ggplot(midwest,aes(x=area,y=poptotal))
+```
+
+### 2. Make a Simple Scatterplot
+
+#### Add Scaterplot
+```{r}
+ggplot(midwest,aes(x=area,y=poptotal)) + geom_point()
+```
+#### Add smoothing layer
+the method "lm" is the short for linear model and it draws the line of best fit
+```{r}
+ggplot(midwest,aes(x=area,y=poptotal)) + geom_point() + geom_smooth(method="lm")
+```
+
+### 3. Adjusting X and Y axis limits
+
+#### Method1: By deleting the points outside the range
+It can be down with xlim() ylim()
+When using xlim() and ylim(), the points outside the specificed range are deleted and will not be considered while drawing the line of best fit (the method "lm")
+```{r}
+g = ggplot(midwest,aes(x=area,y=poptotal)) + geom_point() + geom_smooth(method="lm")
+
+g + xlim(c(0,0.1)) + ylim(c(0,1000000)) # It will be same without c( , )
+```
+#### Method2: Zooming In
+It can be down with coord_cartesian()
+```{r}
+g = ggplot(midwest,aes(x=area,y=poptotal)) + geom_point() + geom_smooth(method="lm")
+
+g1 = g + coord_cartesian(xlim=c(0,0.1),ylim=c(0,1000000))
+plot(g1)
+```
+### 4. Change the Title and Axis Labels
+
+Function labs() is for title, x, and y;
+
+```{r}
+g1 +labs(title = "Area Vs Population", subtitle = "From midwest dataset", y = "Population", x = "Area", caption = "Midwest Demographics")
+
+```
+Or ggtitle(), xlab(), ylab()
+```{r}
+g1 + ggtitle("Area Vs Population", subtitle = "From midwest dataset") + xlab("Area") + ylab("Population") 
+```
+
+### 5. Change the Color and Size of Points
+
+#### Static 
+```{r}
+ggplot(midwest,aes(x=area,y=poptotal)) +
+  geom_point(col="steelblue",size=3) + # set static color and size for points
+  geom_smooth(method="lm",col="firebrick") + # change the color of line
+  coord_cartesian(xlim = c(0,0.1), ylim=c(0,1000000)) +
+  labs(title="Area Vs Population", subtitle = "From midwest dataset", y = "Population", x = "Area", caption = "Midwest Domographics")
+```
+#### Adaptive: Change the color to reflect categories in another column
+```{r}
+gg = ggplot(midwest,aes(x=area,y=poptotal)) +
+  geom_point(aes(col=state),size=3) + # set color to vary based on state categories
+  geom_smooth(method="lm",col="firebrick",size=2) + # change the color of line
+  coord_cartesian(xlim = c(0,0.1), ylim=c(0,1000000)) +
+  labs(title="Area Vs Population", subtitle = "From midwest dataset", y = "Population", x = "Area", caption = "Midwest Domographics")
+
+plot(gg)
+```
+aes(col=state) means the color is based on state.Size, shape, stroke and fill(fill color) can also be used to discriminate groupings.
+
+Legend is added automatically. It can be removed by setting "legend.position" to "None" from within a theme() function:
+```{r}
+gg+theme(legend.position = "None")
+```
+Change the color palette entirely:
+```{r}
+gg+scale_colour_brewer(palette="Set1") # Change the color palette
+```
+More color palettes can be found in the package "RColorBrewer"
+```{r color, echo=FALSE}
+library(RColorBrewer)
+head(brewer.pal.info,10) # show 10 palettes
+```
+
+### 6. Change the X and Y Axis Texts and Ticks Location
+
+#### Step1: Set the breaks:
+```{r}
+gg + scale_x_continuous(breaks = seq(0,0.1,0.01))
+```
+#### Step2: Change the labels
+```{r}
+gg + scale_x_continuous(breaks = seq(0,0.1,0.01),labels = letters[1:11])
+```
+if we want to reverse X Axis Scale
+```{r}
+gg + scale_x_reverse()
+```
+#### Customized Texts for Axis Labels
+```{r}
+gg + 
+  scale_x_continuous(breaks=seq(0,0.1,0.01),labels=sprintf("%1.2f%%",seq(0,0.1,0.01))) +
+  scale_y_continuous(breaks=seq(1,1000000,200000),labels=function(x)(paste0(x/1000,'K')))
+```
+#### Customized the Entire Theme in One Shot using Pre-BUilt Themes
+if we want to reverse X Axis Scale
+```{r}
+gg = gg + scale_x_continuous(breaks = seq(0,0.1,0.01))
+```
+method 1: Using theme_set()
+```{r}
+theme_set(theme_classic())
+gg
+```
+method 2: Adding theme Layer itself
+```{r}
+gg + theme_bw() + labs(subtitle = "BW Theme")
+gg + theme_classic() + labs(subtitle = "Classic Theme")
+gg
+```
+
+## Intro II
+
+### 1. Adding Plot and Axis Titles
+
