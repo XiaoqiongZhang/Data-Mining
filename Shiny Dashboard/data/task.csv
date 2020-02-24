@@ -1,0 +1,13 @@
+﻿ Tasks ,Assigned To ,Start ,End ,Days ,Status 
+Set kick-off meeting ,Alex B. ,9/2/22,9/3/22,1,COMPLETE 
+Agree on objectives ,Frank C. ,9/3/22,9/7/22,4,COMPLETE 
+Detailed Reqs. ,Jacob S. ,9/7/22,9/12/22,5,COMPLETE 
+Hardward Reqs. ,Jacob S. ,9/9/22,9/11/22,2,OVERDUE 
+Final Resource Plan ,Jacob S. ,9/11/22,9/15/22,4,IN PROGRESS 
+Staffing ,Alex B. ,9/16/22,9/17/22,1,IN PROGRESS 
+Techincal Reqs. ,Frank C. ,9/17/22,9/21/22,4,NOT STARTED 
+Testing ,Kennedy K. ,9/24/22,10/2/22,8,NOT STARTED 
+Dev. Complete ,Jacob S. ,10/2/22,10/5/22,3,NOT STARTED 
+Hardware Config. ,Alex B. ,10/5/22,10/7/22,2,NOT STARTED 
+System Testing ,Kennedy K. ,10/6/22,10/9/22,3,NOT STARTED 
+Launch ,,10/9/22,10/10/22,1,
